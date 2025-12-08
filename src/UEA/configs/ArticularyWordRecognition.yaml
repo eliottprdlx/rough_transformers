@@ -1,0 +1,14 @@
+# config.yaml
+dataset: TSC_ArticularyWordRecognition
+epoch:   30
+model: transformer
+global_backward: true
+num_windows: 100
+n_head: 3
+sig_level: 2
+add_time: true
+irreg: true
+univariate: false
+lr: 0.001
+use_signatures: true
+online_signature_calc: true
