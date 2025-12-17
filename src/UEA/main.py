@@ -12,6 +12,7 @@ import torch.optim as optim
 
 from model_classification import DecoderTransformer
 from lstm_classification import LSTM_Classification
+from neuralcde_classification import NCDE_classification
 from utils import get_dataset_preprocess, get_dataset, ComputeModelParams
 from sig_utils import ComputeSignatures
 
@@ -170,6 +171,14 @@ def create_model(config, num_features, seq_len, num_samples, num_classes, device
         return LSTM_Classification(
             input_size=num_features, hidden_size=10,
             num_layers=100, batch_first=True, num_classes=num_classes
+        ).to(device)
+    elif config.model == 'ncde':
+        return NCDE_classification(
+            input_channels=num_features,
+            hidden_channels=64,
+            output_channels=num_classes,
+            num_layers=config.num_layers,
+            mlp_hidden_dim=128
         ).to(device)
     else:
         raise ValueError(f"Unsupported model: {config.model}")

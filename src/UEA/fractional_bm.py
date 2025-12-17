@@ -10,7 +10,6 @@ class FractionalBrownianMotion():
     
     def generate_fbm(self):
         X, y = [], []
-
         # X should be of shape (n_paths, n_features, n_samples)
         for i in range(self.n_paths):
             H = random.choice(self.hursts)
