@@ -1,0 +1,8 @@
+use_signatures: false
+online_signature_calc: false
+irreg: false
+add_time: false
+global_backward: false
+global_forward: false
+local_tight: false
+local_wide: false
