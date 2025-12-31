@@ -86,36 +86,45 @@ def global_signature_forward(
     return _compute_global_sigs(data, x, num_windows, depth, univariate, device, reverse_stream=True)
 
 # --- Local Signature Functions ---
-
 def _compute_local_sigs(
-    data: torch.Tensor, 
-    x: np.ndarray, 
-    num_windows: int, 
-    depth: int, 
-    univariate: bool, 
-    device: torch.device, 
+    data: torch.Tensor,
+    x: np.ndarray,
+    num_windows: int,
+    depth: int,
+    univariate: bool,
+    device: torch.device,
     width: int
 ) -> torch.Tensor:
     """Internal helper for both tight and wide local signatures."""
     step = max(x) / num_windows
-    # Define window boundaries, starting from index 0
     indices = [0] + [np.where(x < step * i)[0][-1] for i in range(1, num_windows + 1)]
     indices[-1] -= 1  # Preserving original index adjustment
 
     all_sigs = []
-    # Loop over windows and compute the signature for each corresponding slice
     for i in range(len(indices) - 1):
         start = max(0, indices[i] - width)
-        # Preserving original clipping logic
-        end = min(int(max(x)), indices[i+1] + width)
-        
-        path_slice = data[:, start:end, :]
-        
-        # Signature of a segment is a single vector; add a dim for stacking
-        sig = _get_signature(path_slice, depth, univariate, streamed=False)
-        all_sigs.append(np.expand_dims(sig, axis=1))
+        end = min(int(max(x)), indices[i + 1] + width)
 
-    concatenated_sigs = np.concatenate(all_sigs, axis=1)
+        path_slice = data[:, start:end, :]  # (B, T, C)
+
+        B, T, C = path_slice.shape
+
+        # SAFE GUARD: iisignature needs at least 2 points (T >= 2)
+        if T < 2:
+            if univariate:
+                # univariate mode: concat of (C-1) signatures on 2D paths (time + one channel)
+                sig_dim = (C - 1) * iisignature.siglength(2, depth)
+            else:
+                # multivariate mode: signature on C-dimensional path
+                sig_dim = iisignature.siglength(C, depth)
+
+            sig = np.zeros((B, sig_dim), dtype=np.float32)
+        else:
+            sig = _get_signature(path_slice, depth, univariate, streamed=False)  # (B, sig_dim)
+
+        all_sigs.append(np.expand_dims(sig, axis=1))  # (B, 1, sig_dim)
+
+    concatenated_sigs = np.concatenate(all_sigs, axis=1)  # (B, num_windows, sig_dim)
     return torch.from_numpy(concatenated_sigs).to(device)
 
 def local_signature_tight(

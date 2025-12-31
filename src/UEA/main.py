@@ -17,7 +17,6 @@ from utils import get_dataset_preprocess, get_dataset, ComputeModelParams
 from sig_utils import ComputeSignatures
 
 
-
 def parse_args():
     """Parses command-line arguments and loads defaults from a YAML config file."""
     prelim = argparse.ArgumentParser(add_help=False)
@@ -35,9 +34,10 @@ def parse_args():
     # Data and seeds
     parser.add_argument("--dataset", type=str, default="TSC_SelfRegulationSCP1", help="Dataset to use")
     parser.add_argument("--n_seeds", type=int, default=4, help="Number of random seeds to try")
+    parser.add_argument("--seed_base", type=int, default=42, help="Base seed for reproducibility")  # [MOD]
 
     # Model and training
-    parser.add_argument("--model", choices=["transformer", "lstm"], default="transformer", help="Model type")
+    parser.add_argument("--model", choices=["transformer", "lstm", "ncde"], default="transformer", help="Model type")
     parser.add_argument("--epoch", type=int, default=110, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=20, help="Training batch size")
     parser.add_argument("--eval_batch_size", type=int, default=-1, help="Evaluation batch size (-1 to use training batch_size)")
@@ -115,9 +115,9 @@ def parse_args():
     if args.config:
         with open(args.config, 'r') as f:
             cfg = yaml.safe_load(f)
-        parser.set_defaults(**cfg)
+        if cfg is not None:
+            parser.set_defaults(**cfg)
 
-    # Final parse (remaining_argv allows CLI overrides of YAML)
     return parser.parse_args(remaining_argv)
 
 
@@ -136,26 +136,26 @@ def calculate_accuracy(config, model, loader, num_classes, seq_len_orig, indices
     correct = total = 0
     error_dist = {}
     t = torch.linspace(0, seq_len_orig, seq_len_orig).view(-1, 1).to(device) if config.add_time else None
-    
+
     with torch.no_grad():
         for batch in loader:
             inputs = batch['input'].to(device)
             labels = batch['label'].to(device)
             if config.online_signature_calc:
                 inputs = compute_signature_inputs(inputs, t, indices_keep, config, device)
-            
+
             outputs = model(inputs)
             preds = outputs.argmax(dim=1)
             total += labels.size(0)
             correct += (preds == labels).sum().item()
-            
+
             wrong_preds = labels[preds != labels]
             if wrong_preds.numel() > 0:
                 counts = torch.bincount(wrong_preds, minlength=num_classes)
                 for i in range(len(counts)):
                     if counts[i] > 0:
                         error_dist[i] = error_dist.get(i, 0) + int(counts[i])
-                        
+
     return correct / total, error_dist
 
 
@@ -189,7 +189,7 @@ def train_one_seed(config, seed, device):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-    
+
     start_time = time.time()
     print("\n" + "="*50)
     print(f"Starting Training for Seed: {seed}")
@@ -198,7 +198,6 @@ def train_one_seed(config, seed, device):
     pprint.pprint(vars(config))
 
     if not config.online_signature_calc:
-        # FIX 2: Standardized variable names to match their usage below.
         train_loader, val_loader, test_loader, seq_len_orig, num_classes, num_samples, num_features = \
             get_dataset_preprocess(config, seed, device)
         seq_len = seq_len_orig
@@ -210,16 +209,10 @@ def train_one_seed(config, seed, device):
     print(f"\nDataset Info: Classes={num_classes}, Samples={num_samples}, Features={num_features}, SeqLen={seq_len}")
 
     indices = list(range(seq_len_orig))
-    if config.use_random_drop:
-        keep_indices = sorted(random.sample(indices, int(config.random_percentage * seq_len_orig)))
-        if 0 not in keep_indices:
-            keep_indices.insert(0, 0)
-    else:
-        keep_indices = indices
+    keep_indices_eval = indices  # ✅ eval always on full sequence (stable)
 
     model = create_model(config, num_features, seq_len, num_samples, num_classes, device)
-    
-    # model number of parameters
+
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total model parameters: {total_params}")
 
@@ -230,36 +223,60 @@ def train_one_seed(config, seed, device):
 
     best_val_acc = -1.0
     best_test_at_val = -1.0
+
     for epoch in range(config.epoch):
+        # ✅ DROP RESAMPLED EACH EPOCH (TRAIN ONLY)
+        if config.use_random_drop:
+            k = int(config.random_percentage * seq_len_orig)
+            k = max(k, 2)  # at least 2 points
+            keep_indices_train = sorted(random.sample(indices, k))
+
+            # ensure index 0 is present
+            if 0 not in keep_indices_train:
+                keep_indices_train[0] = 0
+                keep_indices_train = sorted(set(keep_indices_train))
+
+            # still ensure >=2 distinct points
+            if len(keep_indices_train) < 2:
+                keep_indices_train = [0, min(1, seq_len_orig - 1)]
+        else:
+            keep_indices_train = indices
+
         model.train()
         epoch_loss = 0.0
+
         for batch in train_loader:
             inputs, labels = batch['input'].to(device), batch['label'].to(device)
             if config.online_signature_calc:
-                inputs = compute_signature_inputs(inputs, t_for_sig, keep_indices, config, device)
+                inputs = compute_signature_inputs(inputs, t_for_sig, keep_indices_train, config, device)
 
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
 
         avg_loss = epoch_loss / len(train_loader)
-        val_acc, _ = calculate_accuracy(config, model, val_loader, num_classes, seq_len_orig, keep_indices, device)
-        test_acc, _ = calculate_accuracy(config, model, test_loader, num_classes, seq_len_orig, keep_indices, device)
+
+        # ✅ EVAL WITHOUT DROP (stable metric)
+        val_acc, _ = calculate_accuracy(config, model, val_loader, num_classes, seq_len_orig, keep_indices_eval, device)
+        test_acc, _ = calculate_accuracy(config, model, test_loader, num_classes, seq_len_orig, keep_indices_eval, device)
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_test_at_val = test_acc
-        
+
         print(f"Epoch {epoch+1:03}/{config.epoch} | Loss: {avg_loss:.4f} | Val Acc: {val_acc*100:.2f}% | "
               f"Test Acc: {test_acc*100:.2f}% | Best Val: {best_val_acc*100:.2f}%")
 
     print(f"\nTotal training time: {time.time() - start_time:.2f}s")
-    final_acc, err_dist = calculate_accuracy(config, model, test_loader, num_classes, seq_len_orig, keep_indices, device)
-        
+
+    final_acc, err_dist = calculate_accuracy(config, model, test_loader, num_classes, seq_len_orig, keep_indices_eval, device)
+
+    print(f"final_test_acc: {final_acc:.6f}")
+
     return final_acc
 
 
@@ -269,15 +286,14 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-        
-    seeds = [42 + i for i in range(config.n_seeds)]
+    seeds = [config.seed_base + i for i in range(config.n_seeds)]
     results = []
-    
+
     for s in seeds:
         acc = train_one_seed(config, s, device)
         print(f"\nSeed {s} -> Final Test Accuracy: {acc*100:.2f}%\n")
         results.append(acc)
-        
+
     if len(results) > 1:
         mean_acc = np.mean(results)
         std_acc = np.std(results)
