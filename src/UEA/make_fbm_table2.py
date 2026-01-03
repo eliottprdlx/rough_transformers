@@ -35,12 +35,13 @@ class MethodSpec:
 METHODS = [
     MethodSpec("LSTM", {"model": "lstm"}, []),
     MethodSpec("Transformer", {"model": "transformer"}, []),
+    MethodSpec("NCDE", {"model": "ncde"}, []),
 
     MethodSpec(
         "RFormer-G",
         {
             "model": "transformer",
-            "sig_level": 2,
+            "sig_level": 3,
             "num_windows": 25,   # 🔑 FBM speed
         },
         ["use_signatures", "global_backward", "add_time"],
@@ -50,7 +51,7 @@ METHODS = [
         "RFormer-L",
         {
             "model": "transformer",
-            "sig_level": 2,
+            "sig_level": 3,
             "num_windows": 25,
         },
         ["use_signatures", "local_tight", "add_time"],
@@ -60,7 +61,7 @@ METHODS = [
         "RFormer-GL",
         {
             "model": "transformer",
-            "sig_level": 2,
+            "sig_level": 3,
             "num_windows": 25,
         },
         ["use_signatures", "global_backward", "local_tight", "add_time"],
@@ -74,8 +75,8 @@ MAIN_PY = os.path.join("src", "UEA", "main.py")
 PYTHON_BIN = sys.executable
 
 EXTRA_GLOBAL_ARGS = {
-    "epoch": 15,
-    "batch_size": 32,
+    "epoch": 200,
+    "batch_size": 64,
 }
 
 

@@ -50,12 +50,12 @@ FINAL_TEX = os.path.join(OUT_DIR, "table5_fbm.tex")
 
 # Keep this small: FBM is slow
 GLOBAL_ARGS = {
-    "epoch": 10,        # ULTRA LIGHT
-    "batch_size": 32,   # adjust if RAM allows
+    "epoch": 200,        # ULTRA LIGHT
+    "batch_size": 64,   # adjust if RAM allows
     "n_seeds": 1,       # always 1 seed per subprocess
 }
 
-DROP_KEEP = 0.5  # Table 5 missingness level
+DROP_KEEP = 0.3   # Table 5 missingness level
 
 
 @dataclass(frozen=True)
@@ -74,11 +74,38 @@ class MethodSpec:
 
 
 METHODS = [
+    MethodSpec("LSTM", {"model": "lstm"}, []),
     MethodSpec("Transformer", {"model": "transformer"}, []),
+    MethodSpec("NCDE", {"model": "ncde"}, []),
+
+    MethodSpec(
+        "RFormer-G",
+        {
+            "model": "transformer",
+            "sig_level": 3,
+            "num_windows": 25,   # 🔑 FBM speed
+        },
+        ["use_signatures", "global_backward", "add_time"],
+    ),
+
     MethodSpec(
         "RFormer-L",
-        {"model": "transformer", "sig_level": 2, "num_windows": 25},  # lighter than 100
+        {
+            "model": "transformer",
+            "sig_level": 3,
+            "num_windows": 25,
+        },
         ["use_signatures", "local_tight", "add_time"],
+    ),
+
+    MethodSpec(
+        "RFormer-GL",
+        {
+            "model": "transformer",
+            "sig_level": 3,
+            "num_windows": 25,
+        },
+        ["use_signatures", "global_backward", "local_tight", "add_time"],
     ),
 ]
 
@@ -104,12 +131,17 @@ def parse_final_acc(stdout: str) -> Optional[float]:
 # -----------------------------
 
 def build_cmd(method: MethodSpec, cond: CondSpec, seed: int) -> List[str]:
+    drop = cond.args.get("random_percentage", None)
     cmd = [
         PYTHON_BIN, MAIN_PY,
         "--config", DEFAULT_CONFIG,
         "--dataset", DATASET,
         "--seed_base", str(seed),
+        "--random_percentage", str(drop) if drop is not None else "1.0",
     ]
+
+    if drop is not None:
+        cmd.append("--use_random_drop")
 
     # global args
     for k, v in GLOBAL_ARGS.items():
@@ -225,7 +257,7 @@ def main():
     if not os.path.exists(DEFAULT_CONFIG):
         raise FileNotFoundError(f"Cannot find {DEFAULT_CONFIG}")
 
-    raw_df = load_existing_raw()
+    raw_df = pd.DataFrame(columns=["method", "cond", "seed", "acc", "time_s", "log_path"])
     done = done_keys(raw_df)
 
     jobs = [(m, c, s) for m in METHODS for c in CONDS for s in SEEDS]

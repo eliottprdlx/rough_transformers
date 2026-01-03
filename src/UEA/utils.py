@@ -172,7 +172,7 @@ def get_dataset_preprocess(config, seed, device):
         num_samples = len(x_train)
 
     elif config.dataset[:] == "FractionalBrownianMotion":
-        hursts = np.linspace(0.2, 0.8, 5).tolist()
+        hursts = np.linspace(0.2, 0.8, 10).tolist()
         X, Y = FractionalBrownianMotion(n_paths=1000, n_samples=500, hursts=hursts).generate_fbm()
         X = torch.tensor(np.transpose(X, (0, 2, 1)))
         seq_length_original = X.shape[1]
