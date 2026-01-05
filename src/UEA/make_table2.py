@@ -30,20 +30,21 @@ class MethodSpec:
 METHODS = [
     MethodSpec("LSTM", {"model": "lstm"}, []),
     MethodSpec("Transformer", {"model": "transformer"}, []),
+    MethodSpec("NCDE", {"model": "ncde"}, []),
 
     MethodSpec(
         "RFormer-G",
-        {"model": "transformer", "sig_level": 2, "num_windows": 100},
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
         ["use_signatures", "global_backward", "add_time"],
     ),
     MethodSpec(
         "RFormer-L",
-        {"model": "transformer", "sig_level": 2, "num_windows": 100},
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
         ["use_signatures", "local_tight", "add_time"],
     ),
     MethodSpec(
         "RFormer-GL",
-        {"model": "transformer", "sig_level": 2, "num_windows": 100},
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
         ["use_signatures", "global_backward", "local_tight", "add_time"],
     ),
 ]
@@ -55,8 +56,8 @@ MAIN_PY = os.path.join("src", "UEA", "main.py")
 PYTHON_BIN = sys.executable
 
 EXTRA_GLOBAL_ARGS = {
-    "epoch": 150,        # mets 50 si tu as le temps
-    "batch_size": 32,
+    "epoch": 200,        # mets 50 si tu as le temps
+    "batch_size": 64,
     # optionnel: "lr": 0.0004,
 }
 

@@ -2,6 +2,7 @@ import numpy as np
 import fbm
 import random
 
+# Experiment taken from : https://arxiv.org/abs/1905.08494.
 class FractionalBrownianMotion():
     def __init__(self, n_paths, n_samples, hursts):
         self.n_paths = n_paths

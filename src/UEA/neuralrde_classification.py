@@ -3,8 +3,7 @@ import torch
 import torch.nn as nn
 import rdeint
 
-# Original code from : https://github.com/fmorenopino/neuralRDE.
-
+# Code adapted from : https://github.com/fmorenopino/neuralRDE.
 class F(nn.Module):
     def __init__(self, input_channels, logsignature_channels, hidden_channels, num_layers=2, mlp_hidden_dim=128):
         super().__init__()

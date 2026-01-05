@@ -225,7 +225,6 @@ def train_one_seed(config, seed, device):
     best_test_at_val = -1.0
 
     for epoch in range(config.epoch):
-        # ✅ DROP RESAMPLED EACH EPOCH (TRAIN ONLY)
         if config.use_random_drop:
             k = int(config.random_percentage * seq_len_orig)
             k = max(k, 2)  # at least 2 points
@@ -247,6 +246,11 @@ def train_one_seed(config, seed, device):
 
         for batch in train_loader:
             inputs, labels = batch['input'].to(device), batch['label'].to(device)
+
+            # sub sample inputs if random drop is enabled
+            if config.use_random_drop:
+                inputs = inputs[:, keep_indices_train, :]
+
             if config.online_signature_calc:
                 inputs = compute_signature_inputs(inputs, t_for_sig, keep_indices_train, config, device)
 
