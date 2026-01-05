@@ -1,6 +1,7 @@
 import torch
 import torchcde
 
+# Code adapted from : https://github.com/patrick-kidger/NeuralCDE
 class F(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, num_layers=2, mlp_hidden_dim=128):
         super().__init__()
