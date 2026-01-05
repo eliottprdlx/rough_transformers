@@ -1,0 +1,15 @@
+aeon
+fbm
+numpy<2
+pandas
+scipy
+jinja2
+iisignature
+tqdm
+matplotlib
+scikit-learn
+torch
+torchcde
+torchdiffeq
+torchsde
+pyyaml
