@@ -1,9 +1,13 @@
 import torch
 import torchcde
 
+<<<<<<< HEAD
 
 # Original code from : https://github.com/patrick-kidger/torchcde
 
+=======
+# Code adapted from : https://github.com/patrick-kidger/NeuralCDE
+>>>>>>> 9b44c29d0dfde17ac1a17ebe392dee4a3c11a414
 class F(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, num_layers=2, mlp_hidden_dim=128):
         super().__init__()

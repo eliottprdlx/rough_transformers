@@ -3,6 +3,7 @@ import fbm
 import random
 import matplotlib.pyplot as plt
 
+# Experiment taken from : https://arxiv.org/abs/1905.08494.
 class FractionalBrownianMotion():
     def __init__(self, n_paths, n_samples, hursts):
         self.n_paths = n_paths

@@ -34,17 +34,29 @@ METHODS = [
 
     MethodSpec(
         "RFormer-G",
+<<<<<<< HEAD
         {"model": "transformer", "sig_level": 2, "num_windows": 20},
+=======
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
+>>>>>>> 9b44c29d0dfde17ac1a17ebe392dee4a3c11a414
         ["use_signatures", "global_backward", "add_time"],
     ),
     MethodSpec(
         "RFormer-L",
+<<<<<<< HEAD
         {"model": "transformer", "sig_level": 2, "num_windows": 20},
+=======
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
+>>>>>>> 9b44c29d0dfde17ac1a17ebe392dee4a3c11a414
         ["use_signatures", "local_tight", "add_time"],
     ),
     MethodSpec(
         "RFormer-GL",
+<<<<<<< HEAD
         {"model": "transformer", "sig_level": 2, "num_windows": 20},
+=======
+        {"model": "transformer", "sig_level": 2, "num_windows": 15},
+>>>>>>> 9b44c29d0dfde17ac1a17ebe392dee4a3c11a414
         ["use_signatures", "global_backward", "local_tight", "add_time"],
     ),
 ]
