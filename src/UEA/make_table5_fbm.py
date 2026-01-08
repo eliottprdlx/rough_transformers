@@ -93,7 +93,7 @@ METHODS = [
         {
             "model": "transformer",
             "sig_level": 3,
-            "num_windows": 25,
+            "num_windows": 40,
         },
         ["use_signatures", "local_tight", "add_time"],
     ),
@@ -103,7 +103,7 @@ METHODS = [
         {
             "model": "transformer",
             "sig_level": 3,
-            "num_windows": 25,
+            "num_windows": 40,
         },
         ["use_signatures", "global_backward", "local_tight", "add_time"],
     ),

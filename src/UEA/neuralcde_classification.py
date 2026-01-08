@@ -1,6 +1,9 @@
 import torch
 import torchcde
 
+
+# Original code from : https://github.com/patrick-kidger/torchcde
+
 class F(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, num_layers=2, mlp_hidden_dim=128):
         super().__init__()

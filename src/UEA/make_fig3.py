@@ -468,11 +468,11 @@ def plot_fig3(curves_left: Dict[str, np.ndarray], curves_right: Dict[str, np.nda
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="Tiny run to verify everything works fast.")
-    ap.add_argument("--epochs", type=int, default=5)
-    ap.add_argument("--T", type=int, default=2000)
+    ap.add_argument("--epochs", type=int, default=100)
+    ap.add_argument("--T", type=int, default=500)
     ap.add_argument("--n_train", type=int, default=800)
     ap.add_argument("--n_test", type=int, default=200)
-    ap.add_argument("--batch_size", type=int, default=64)
+    ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--no_ncde", action="store_true", help="Skip NCDE (useful if too slow).")
     args = ap.parse_args()
 
@@ -494,18 +494,18 @@ def main():
 
     cfg_short = SynthConfig(
         n_train=args.n_train, n_test=args.n_test, n_classes=100,
-        T=args.T, noise_std=0.1, use_envelope=True
+        T=args.T, noise_std=0.0, use_envelope=True
     )
     cfg_long = SynthConfig(
         n_train=args.n_train, n_test=args.n_test, n_classes=100,
-        T=args.T, noise_std=0.1, use_envelope=True
+        T=args.T, noise_std=0.0, use_envelope=True
     )
 
     train_cfg = TrainCfg(
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=1e-3,
-        embedded_dim=64,
+        embedded_dim=32,
         num_layers=2,
         n_head=4,
     )
